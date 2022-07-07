@@ -1,0 +1,41 @@
+#include <dt-bindings/spi/spi.h>
+#include <dt-bindings/led/led.h>
+#include <dt-bindings/pinctrl/esp32-pinctrl.h>
+
+/ {
+	aliases {
+		rgb = &ws2812;
+	};
+};
+
+&pinctrl {
+	spim2_mosi_gpio12: spim2_mosi_gpio12 {
+		pinmux = <SPIM2_MOSI_GPIO12>;
+	};
+
+	spim2_miso_gpio13: spim2_miso_gpio13 {
+		pinmux = <SPIM2_MISO_GPIO13>;
+	};
+
+	spim2_sclk_gpio19: spim2_sclk_gpio19 {
+		pinmux = <SPIM2_SCLK_GPIO19>;
+	};
+};
+
+&spi2 {
+	pinctrl-0 = <&spim2_miso_gpio13 &spim2_mosi_gpio12
+				 &spim2_sclk_gpio19 &spim2_csel_gpio15>;
+
+	ws2812: ws2812@0 {
+		compatible = "worldsemi,ws2812-spi";
+		label = "ws2812";
+
+		reg = <0>;
+		spi-max-frequency = <4000000>;
+
+		chain-length = <6>;
+		spi-one-frame = <0x70>;
+		spi-zero-frame = <0x40>;
+		color-mapping = <LED_COLOR_ID_GREEN LED_COLOR_ID_RED LED_COLOR_ID_BLUE>;
+	};
+};
