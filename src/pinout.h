@@ -8,4 +8,6 @@
 
 #define LCD_EN_NODE DT_ALIAS(lcd_en)
 
+#define RTC_NODE DT_ALIAS(rtc)
+
 #endif  // __PROJECT_PINOUT_H__
