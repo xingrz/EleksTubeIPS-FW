@@ -6,4 +6,6 @@
 #define RGB_NODE DT_ALIAS(rgb)
 #define RGB_NUM_PIXELS DT_PROP(RGB_NODE, chain_length)
 
+#define RTC_NODE DT_ALIAS(rtc)
+
 #endif  // __PROJECT_PINOUT_H__
