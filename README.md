@@ -5,7 +5,7 @@ EleksTubeIPS-FW
 
 ## Bring up TODOs
 
-- [ ] RGB
+- [x] RGB
 - [ ] SM74HC595D
 - [ ] NFP114H-03AF LCDs
 - [ ] DS3231SN RTC
