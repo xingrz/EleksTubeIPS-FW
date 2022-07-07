@@ -1,4 +1,5 @@
 #include <device.h>
+#include <drivers/gpio.h>
 #include <drivers/led_strip.h>
 #include <logging/log.h>
 #include <zephyr.h>
@@ -8,6 +9,7 @@
 LOG_MODULE_REGISTER(main);
 
 static const struct device *rgb_dev = DEVICE_DT_GET(RGB_NODE);
+static const struct gpio_dt_spec lcd_en = GPIO_DT_SPEC_GET(LCD_EN_NODE, gpios);
 
 void
 main(void)
@@ -16,6 +18,8 @@ main(void)
 		LOG_ERR("RGB LED device %s is not ready", rgb_dev->name);
 		return;
 	}
+
+	gpio_pin_configure_dt(&lcd_en, GPIO_OUTPUT_ACTIVE);
 
 	struct led_rgb rgb[] = {
 		{.r = 0xFF, .g = 0x00, .b = 0x00},

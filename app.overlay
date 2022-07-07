@@ -1,10 +1,20 @@
 #include <dt-bindings/spi/spi.h>
 #include <dt-bindings/led/led.h>
+#include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/pinctrl/esp32-pinctrl.h>
 
 / {
 	aliases {
 		rgb = &ws2812;
+		lcd-en = &lcd_en;
+	};
+
+	leds {
+		compatible = "gpio-leds";
+
+		lcd_en: led_0 {
+			gpios = <&gpio0 27 GPIO_ACTIVE_HIGH>;
+		};
 	};
 };
 
