@@ -1,9 +1,11 @@
 #include <device.h>
 #include <drivers/counter.h>
+#include <drivers/display.h>
 #include <drivers/gpio.h>
 #include <drivers/led_strip.h>
 #include <drivers/rtc/maxim_ds3231.h>
 #include <logging/log.h>
+#include <lvgl.h>
 #include <zephyr.h>
 
 #include "pinout.h"
@@ -13,6 +15,7 @@ LOG_MODULE_REGISTER(main);
 static const struct device *rgb_dev = DEVICE_DT_GET(RGB_NODE);
 static const struct device *rtc_dev = DEVICE_DT_GET(RTC_NODE);
 static const struct gpio_dt_spec lcd_en = GPIO_DT_SPEC_GET(LCD_EN_NODE, gpios);
+static const struct device *display_dev = DEVICE_DT_GET(DISPLAY_NODE);
 
 void
 main(void)
@@ -37,7 +40,7 @@ main(void)
 
 	for (int i = 0; i < 30; i++) {
 		led_strip_update_rgb(rgb_dev, &rgb[i % 3], RGB_NUM_PIXELS);
-		k_sleep(K_MSEC(100));
+		k_sleep(K_MSEC(10));
 	}
 
 	LOG_INF("[DS3231] Sync clock freq %u Hz", maxim_ds3231_syncclock_frequency(rtc_dev));
@@ -60,10 +63,34 @@ main(void)
 	LOG_INF("[DS3231] ctrl %02x ; ctrl_stat %02x", maxim_ds3231_ctrl_update(rtc_dev, 0, 0),
 		maxim_ds3231_stat_update(rtc_dev, 0, 0));
 
+	char count_str[11] = {0};
+	if (!device_is_ready(display_dev)) {
+		LOG_ERR("Device not ready, aborting test");
+		return;
+	}
+
+	lv_obj_t *rect = lv_obj_create(lv_scr_act());
+	lv_obj_set_pos(rect, 1, 1);
+	lv_obj_set_size(rect, 135 - 1 * 2, 240 - 1 * 2);
+	lv_obj_set_style_bg_color(rect, lv_color_make(0x00, 0x99, 0xff), LV_STATE_DEFAULT);
+	lv_obj_set_style_border_width(rect, 0, LV_STATE_DEFAULT);
+	lv_obj_set_style_shadow_width(rect, 0, LV_STATE_DEFAULT);
+
+	lv_obj_t *count_label = lv_label_create(lv_scr_act());
+	lv_obj_align(count_label, LV_ALIGN_CENTER, 0, 0);
+
+	lv_task_handler();
+	display_blanking_off(display_dev);
+
 	uint32_t now = 0;
 	while (1) {
 		counter_get_value(rtc_dev, &now);
 		LOG_INF("[DS3231] time: %u", now);
+
+		sprintf(count_str, "%u", now);
+		lv_label_set_text(count_label, count_str);
+		lv_task_handler();
+
 		k_sleep(K_MSEC(1000));
 	}
 }
