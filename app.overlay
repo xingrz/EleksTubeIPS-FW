@@ -3,6 +3,10 @@
 #include <dt-bindings/pinctrl/esp32-pinctrl.h>
 
 / {
+	chosen {
+		zephyr,display = &st7789v;
+	};
+
 	aliases {
 		rgb = &ws2812;
 		rtc = &ds3231;
@@ -38,6 +42,40 @@
 		spi-one-frame = <0x70>;
 		spi-zero-frame = <0x40>;
 		color-mapping = <LED_COLOR_ID_GREEN LED_COLOR_ID_RED LED_COLOR_ID_BLUE>;
+	};
+};
+
+&spi3 {
+	st7789v: st7789v@0{
+		compatible = "sitronix,st7789v";
+		label = "st7789v";
+
+		reg = <0>;
+		spi-max-frequency = <2000000>;
+
+		reset-gpios = <&gpio0 26 GPIO_ACTIVE_LOW>;
+		cmd-data-gpios = <&gpio0 25 GPIO_ACTIVE_LOW>;
+
+		width = <135>;
+		height = <240>;
+		x-offset = <52>;
+		y-offset = <40>;
+
+		vcom = <0x19>;
+		gctrl = <0x35>;
+		vrhs = <0x12>;
+		vdvs = <0x20>;
+		mdac = <0x00>;
+		lcm = <0x2c>;
+		colmod = <0x05>;
+		gamma = <0x01>;
+		porch-param = [0c 0c 00 33 33];
+		cmd2en-param = [5a 69 02 01];
+		pwctrl1-param = [a4 a1];
+		pvgam-param = [d0 04 0d 11 13 2b 3f 54 4c 18 0d 0b 1f 23];
+		nvgam-param = [d0 04 0c 11 13 2c 3f 44 51 2f 1f 1f 20 23];
+		ram-param = [00 f8];
+		rgb-param = [cd 08 14];
 	};
 };
 

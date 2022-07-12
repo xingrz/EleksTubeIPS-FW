@@ -7,7 +7,7 @@ EleksTubeIPS-FW
 
 - [x] RGB
 - [ ] SM74HC595D
-- [ ] NFP114H-03AF LCDs
+- [x] NFP114H-03AF LCDs
 - [x] DS3231SN RTC
 
 ## License
