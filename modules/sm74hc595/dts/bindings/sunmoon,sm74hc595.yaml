@@ -1,0 +1,21 @@
+description: Sunmoon 74HC595 GPIO controller
+
+compatible: "sunmoon,sm74hc595"
+
+include: base.yaml
+
+properties:
+  ser-gpios:
+    type: phandle-array
+    required: true
+
+  sck-gpios:
+    type: phandle-array
+    required: true
+
+  rck-gpios:
+    type: phandle-array
+    required: true
+
+  init-states:
+    type: int
