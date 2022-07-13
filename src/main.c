@@ -38,11 +38,6 @@ main(void)
 		{.r = 0x00, .g = 0xFF, .b = 0x00},
 	};
 
-	for (int i = 0; i < 30; i++) {
-		led_strip_update_rgb(rgb_dev, &rgb[i % 3], RGB_NUM_PIXELS);
-		k_sleep(K_MSEC(10));
-	}
-
 	LOG_INF("[DS3231] Sync clock freq %u Hz", maxim_ds3231_syncclock_frequency(rtc_dev));
 
 	int stat = maxim_ds3231_stat_update(rtc_dev, 0, MAXIM_DS3231_REG_STAT_OSF);
@@ -78,6 +73,7 @@ main(void)
 
 	lv_obj_t *count_label = lv_label_create(lv_scr_act());
 	lv_obj_align(count_label, LV_ALIGN_CENTER, 0, 0);
+	lv_obj_set_style_text_color(count_label, lv_color_make(0xff, 0xff, 0xff), LV_STATE_DEFAULT);
 
 	lv_task_handler();
 	display_blanking_off(display_dev);
@@ -87,7 +83,11 @@ main(void)
 		counter_get_value(rtc_dev, &now);
 		LOG_INF("[DS3231] time: %u", now);
 
+		led_strip_update_rgb(rgb_dev, &rgb[now % 3], RGB_NUM_PIXELS);
+
 		sprintf(count_str, "%u", now);
+		lv_obj_set_style_bg_color(
+			rect, lv_color_make(rgb[now % 3].r, rgb[now % 3].g, rgb[now % 3].b), LV_STATE_DEFAULT);
 		lv_label_set_text(count_label, count_str);
 		lv_task_handler();
 
