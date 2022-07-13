@@ -1,6 +1,7 @@
 #include <device.h>
 #include <drivers/counter.h>
 #include <drivers/display.h>
+#include <drivers/gpio.h>
 #include <drivers/led_strip.h>
 #include <drivers/rtc/maxim_ds3231.h>
 #include <logging/log.h>
@@ -14,6 +15,7 @@ LOG_MODULE_REGISTER(main);
 static const struct device *rgb_dev = DEVICE_DT_GET(RGB_NODE);
 static const struct device *rtc_dev = DEVICE_DT_GET(RTC_NODE);
 static const struct device *display_dev = DEVICE_DT_GET(DISPLAY_NODE);
+static const struct device *gpio_ex_dev = DEVICE_DT_GET(DT_NODELABEL(gpio_ex));
 
 void
 main(void)
@@ -74,19 +76,27 @@ main(void)
 	lv_task_handler();
 	display_blanking_off(display_dev);
 
+	gpio_port_set_masked_raw(gpio_ex_dev, 0x3f, 0x3f);
+
 	uint32_t now = 0;
+	uint32_t i = 0;
 	while (1) {
 		counter_get_value(rtc_dev, &now);
 		LOG_INF("[DS3231] time: %u", now);
 
-		led_strip_update_rgb(rgb_dev, &rgb[now % 3], RGB_NUM_PIXELS);
+		led_strip_update_rgb(rgb_dev, &rgb[i % 3], RGB_NUM_PIXELS);
+
+		gpio_pin_set(gpio_ex_dev, i % 6, 0);
 
 		sprintf(count_str, "%u", now);
 		lv_obj_set_style_bg_color(
-			rect, lv_color_make(rgb[now % 3].r, rgb[now % 3].g, rgb[now % 3].b), LV_STATE_DEFAULT);
+			rect, lv_color_make(rgb[i % 5].r, rgb[i % 5].g, rgb[i % 5].b), LV_STATE_DEFAULT);
 		lv_label_set_text(count_label, count_str);
 		lv_task_handler();
 
+		gpio_pin_set(gpio_ex_dev, i % 6, 1);
+
 		k_sleep(K_MSEC(1000));
+		i++;
 	}
 }
