@@ -23,7 +23,7 @@
 	};
 
 	gpio_ex: sm74hc595 {
-		compatible = "sunmoon,sm74hc595";
+		compatible = "ti,74hc595";
 		ser-gpios = <&gpio0 14 0>;
 		sck-gpios = <&gpio0 16 0>;
 		rck-gpios = <&gpio0 17 0>;
