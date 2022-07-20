@@ -54,7 +54,6 @@
 
 		reg = <0>;
 		spi-max-frequency = <4000000>;
-		frame-format = <SPI_FRAME_FORMAT_TI>;
 
 		chain-length = <6>;
 		spi-one-frame = <0x70>;
