@@ -14,7 +14,6 @@ LOG_MODULE_REGISTER(main);
 
 static const struct device *rgb_dev = DEVICE_DT_GET(RGB_NODE);
 static const struct device *rtc_dev = DEVICE_DT_GET(RTC_NODE);
-static const struct gpio_dt_spec lcd_en = GPIO_DT_SPEC_GET(LCD_EN_NODE, gpios);
 static const struct device *display_dev = DEVICE_DT_GET(DISPLAY_NODE);
 static const struct device *gpio_ex_dev = DEVICE_DT_GET(DT_NODELABEL(gpio_ex));
 
@@ -25,8 +24,6 @@ main(void)
 		LOG_ERR("RGB LED device %s is not ready", rgb_dev->name);
 		return;
 	}
-
-	gpio_pin_configure_dt(&lcd_en, GPIO_OUTPUT_ACTIVE);
 
 	struct led_rgb rgb[] = {
 		{.r = 0xFF, .g = 0x00, .b = 0x00},
