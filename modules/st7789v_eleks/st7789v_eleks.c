@@ -29,6 +29,7 @@ struct st7789v_config {
 	struct spi_dt_spec bus;
 	struct gpio_dt_spec cmd_data_gpio;
 	struct gpio_dt_spec reset_gpio;
+	struct gpio_dt_spec enable_gpio;
 	uint8_t vcom;
 	uint8_t gctrl;
 	bool vdv_vrh_enable;
@@ -348,6 +349,18 @@ st7789v_init(const struct device *dev)
 		return -ENODEV;
 	}
 
+	if (config->enable_gpio.port != NULL) {
+		if (!device_is_ready(config->enable_gpio.port)) {
+			LOG_ERR("Enable GPIO device not ready");
+			return -ENODEV;
+		}
+
+		if (gpio_pin_configure_dt(&config->enable_gpio, GPIO_OUTPUT_INACTIVE)) {
+			LOG_ERR("Couldn't configure enable pin");
+			return -EIO;
+		}
+	}
+
 	if (config->reset_gpio.port != NULL) {
 		if (!device_is_ready(config->reset_gpio.port)) {
 			LOG_ERR("Reset GPIO device not ready");
@@ -368,6 +381,11 @@ st7789v_init(const struct device *dev)
 	if (gpio_pin_configure_dt(&config->cmd_data_gpio, GPIO_OUTPUT)) {
 		LOG_ERR("Couldn't configure cmd/DATA pin");
 		return -EIO;
+	}
+
+	if (config->enable_gpio.port != NULL) {
+		gpio_pin_set_dt(&config->enable_gpio, 1);
+		k_sleep(K_MSEC(200));
 	}
 
 	st7789v_reset_display(dev);
@@ -421,6 +439,7 @@ static const struct display_driver_api st7789v_api = {
 		.bus = SPI_DT_SPEC_INST_GET(inst, SPI_OP_MODE_MASTER | SPI_WORD_SET(8), 0),               \
 		.cmd_data_gpio = GPIO_DT_SPEC_INST_GET(inst, cmd_data_gpios),                             \
 		.reset_gpio = GPIO_DT_SPEC_INST_GET_OR(inst, reset_gpios, {}),                            \
+		.enable_gpio = GPIO_DT_SPEC_INST_GET_OR(inst, enable_gpios, {}),                          \
 		.vcom = DT_INST_PROP(inst, vcom),                                                         \
 		.gctrl = DT_INST_PROP(inst, gctrl),                                                       \
 		.vdv_vrh_enable =                                                                         \

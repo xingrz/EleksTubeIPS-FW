@@ -1,3 +1,8 @@
 compatible: "eleks,st7789v"
 
 include: ["sitronix,st7789v.yaml"]
+
+properties:
+    enable-gpios:
+      type: phandle-array
+      required: false
