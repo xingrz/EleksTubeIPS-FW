@@ -15,7 +15,6 @@ LOG_MODULE_REGISTER(main);
 static const struct device *rgb_dev = DEVICE_DT_GET(RGB_NODE);
 static const struct device *rtc_dev = DEVICE_DT_GET(RTC_NODE);
 static const struct device *display_dev = DEVICE_DT_GET(DISPLAY_NODE);
-static const struct device *gpio_ex_dev = DEVICE_DT_GET(DT_NODELABEL(gpio_ex));
 
 void
 main(void)
@@ -64,7 +63,7 @@ main(void)
 
 	lv_obj_t *rect = lv_obj_create(lv_scr_act());
 	lv_obj_set_pos(rect, 0, 0);
-	lv_obj_set_size(rect, 135, 240);
+	lv_obj_set_size(rect, 810, 240);
 	lv_obj_set_style_bg_color(rect, lv_color_make(0x00, 0x00, 0x00), LV_STATE_DEFAULT);
 	lv_obj_set_style_border_width(rect, 0, LV_STATE_DEFAULT);
 	lv_obj_set_style_shadow_width(rect, 0, LV_STATE_DEFAULT);
@@ -78,21 +77,15 @@ main(void)
 	lv_task_handler();
 	display_blanking_off(display_dev);
 
-	gpio_port_set_masked_raw(gpio_ex_dev, 0x3f, 0x3f);
-
+	uint32_t i = 0;
 	uint32_t now = 0;
 	while (1) {
 		counter_get_value(rtc_dev, &now);
 
 		sprintf(count_str, "%u", now);
-		char *start = count_str + strlen(count_str) - 6;
-		for (int i = 5; i >= 0; i--) {
-			gpio_pin_set(gpio_ex_dev, i, 0);
-			start[i + 1] = '\0';
-			lv_label_set_text(count_label, start + i);
-			lv_task_handler();
-			gpio_pin_set(gpio_ex_dev, i, 1);
-			k_sleep(K_MSEC(20));
-		}
+		lv_obj_align(count_label, LV_ALIGN_CENTER, -100 + ++i % 200, 0);
+		lv_label_set_text(count_label, count_str);
+		lv_task_handler();
+		k_sleep(K_MSEC(20));
 	}
 }

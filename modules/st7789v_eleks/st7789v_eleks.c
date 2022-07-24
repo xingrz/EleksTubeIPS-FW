@@ -30,6 +30,8 @@ struct st7789v_config {
 	struct gpio_dt_spec cmd_data_gpio;
 	struct gpio_dt_spec reset_gpio;
 	struct gpio_dt_spec enable_gpio;
+	uint8_t screens;
+	const struct device *screen_selector;
 	uint8_t vcom;
 	uint8_t gctrl;
 	bool vdv_vrh_enable;
@@ -123,8 +125,29 @@ st7789v_reset_display(const struct device *dev)
 }
 
 static int
+st7789v_screen_select(const struct device *dev, uint8_t idx)
+{
+	const struct st7789v_config *config = dev->config;
+	if (config->screen_selector == NULL) {
+		return 0;
+	}
+	return gpio_port_set_masked_raw(config->screen_selector, BIT_MASK(config->screens), ~BIT(idx));
+}
+
+static int
+st7789v_screen_select_all(const struct device *dev)
+{
+	const struct st7789v_config *config = dev->config;
+	if (config->screen_selector == NULL) {
+		return 0;
+	}
+	return gpio_port_set_masked_raw(config->screen_selector, BIT_MASK(config->screens), 0);
+}
+
+static int
 st7789v_blanking_on(const struct device *dev)
 {
+	st7789v_screen_select_all(dev);
 	st7789v_transmit(dev, ST7789V_CMD_DISP_OFF, NULL, 0);
 	return 0;
 }
@@ -132,6 +155,7 @@ st7789v_blanking_on(const struct device *dev)
 static int
 st7789v_blanking_off(const struct device *dev)
 {
+	st7789v_screen_select_all(dev);
 	st7789v_transmit(dev, ST7789V_CMD_DISP_ON, NULL, 0);
 	return 0;
 }
@@ -163,6 +187,73 @@ st7789v_set_mem_area(const struct device *dev, const uint16_t x, const uint16_t 
 }
 
 static int
+st7789v_write_screens(const struct device *dev, const uint16_t x, const uint16_t y,
+	const struct display_buffer_descriptor *desc, const void *buf)
+{
+	const struct st7789v_config *config = dev->config;
+
+	if (config->screens <= 1) {
+		return -1;
+	}
+
+	uint16_t screen_width = config->width / config->screens;
+
+	uint16_t draw_x1 = x;
+	uint16_t draw_x2 = x + desc->width;
+
+	uint16_t disp_idx1 = draw_x1 / screen_width;
+	uint16_t disp_idx2 = (draw_x2 + screen_width - 1) / screen_width;
+
+	if (disp_idx1 + 1 == disp_idx2) {
+		st7789v_screen_select(dev, disp_idx1);
+		return -1;
+	}
+
+	const uint8_t *disp_buf;
+	struct spi_buf tx_buf;
+	struct spi_buf_set tx_bufs;
+	uint16_t real_x1, real_x2, real_w;
+	for (uint8_t idx = disp_idx1; idx < disp_idx2; idx++) {
+		st7789v_screen_select(dev, idx);
+
+		if (draw_x1 > screen_width * idx) {
+			real_x1 = draw_x1 - screen_width * idx;
+		} else {
+			real_x1 = 0;
+		}
+
+		if (draw_x2 < screen_width * (idx + 1)) {
+			real_x2 = draw_x2 - screen_width * idx;
+		} else {
+			real_x2 = screen_width;
+		}
+
+		real_w = real_x2 - real_x1;
+
+		st7789v_set_mem_area(dev, real_x1, y, real_w, desc->height);
+
+		disp_buf = (const uint8_t *)buf;
+		if (real_x1 == 0) {
+			disp_buf += (screen_width * idx - draw_x1) * ST7789V_PIXEL_SIZE;
+		}
+
+		st7789v_transmit(dev, ST7789V_CMD_RAMWR, (void *)disp_buf, real_w * ST7789V_PIXEL_SIZE);
+		disp_buf += desc->width * ST7789V_PIXEL_SIZE;
+
+		tx_bufs.buffers = &tx_buf;
+		tx_bufs.count = 1;
+		for (uint16_t line = 1; line < desc->height; line++) {
+			tx_buf.buf = (void *)disp_buf;
+			tx_buf.len = real_w * ST7789V_PIXEL_SIZE;
+			spi_write_dt(&config->bus, &tx_bufs);
+			disp_buf += desc->width * ST7789V_PIXEL_SIZE;
+		}
+	}
+
+	return 0;
+}
+
+static int
 st7789v_write(const struct device *dev, const uint16_t x, const uint16_t y,
 	const struct display_buffer_descriptor *desc, const void *buf)
 {
@@ -173,6 +264,10 @@ st7789v_write(const struct device *dev, const uint16_t x, const uint16_t y,
 	uint16_t write_cnt;
 	uint16_t nbr_of_writes;
 	uint16_t write_h;
+
+	if (st7789v_write_screens(dev, x, y, desc, buf) == 0) {
+		return 0;
+	}
 
 	__ASSERT(desc->width <= desc->pitch, "Pitch is smaller then width");
 	__ASSERT((desc->pitch * ST7789V_PIXEL_SIZE * desc->height) <= desc->buf_size,
@@ -388,6 +483,23 @@ st7789v_init(const struct device *dev)
 		k_sleep(K_MSEC(200));
 	}
 
+	if (config->screens < 1) {
+		LOG_ERR("Number of screens should be greater than 0");
+		return -EINVAL;
+	} else if (config->screens > 1 && config->screen_selector == NULL) {
+		LOG_ERR("Property 'screen-selector' is required for multiple screens");
+		return -EINVAL;
+	}
+
+	if (config->screen_selector != NULL) {
+		if (!device_is_ready(config->screen_selector)) {
+			LOG_ERR("Screen selector device not ready");
+			return -ENODEV;
+		}
+	}
+
+	st7789v_screen_select_all(dev);
+
 	st7789v_reset_display(dev);
 
 	st7789v_blanking_on(dev);
@@ -441,6 +553,8 @@ static const struct display_driver_api st7789v_api = {
 		.cmd_data_gpio = GPIO_DT_SPEC_INST_GET(inst, cmd_data_gpios),                             \
 		.reset_gpio = GPIO_DT_SPEC_INST_GET_OR(inst, reset_gpios, {}),                            \
 		.enable_gpio = GPIO_DT_SPEC_INST_GET_OR(inst, enable_gpios, {}),                          \
+		.screens = DT_INST_PROP_OR(inst, screens, 1),                                             \
+		.screen_selector = DEVICE_DT_GET_OR_NULL(DT_INST_PHANDLE(inst, screen_selector)),         \
 		.vcom = DT_INST_PROP(inst, vcom),                                                         \
 		.gctrl = DT_INST_PROP(inst, gctrl),                                                       \
 		.vdv_vrh_enable =                                                                         \

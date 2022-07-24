@@ -6,3 +6,11 @@ properties:
     enable-gpios:
       type: phandle-array
       required: false
+
+    screens:
+      type: int
+      required: false
+
+    screen-selector:
+      type: phandle
+      required: false

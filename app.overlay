@@ -65,7 +65,10 @@
 		reset-gpios = <&gpio0 26 GPIO_ACTIVE_LOW>;
 		cmd-data-gpios = <&gpio0 25 GPIO_ACTIVE_LOW>;
 
-		width = <135>;
+		screens = <6>;
+		screen-selector = <&gpio_ex>;
+
+		width = <810>;
 		height = <240>;
 		x-offset = <52>;
 		y-offset = <40>;
