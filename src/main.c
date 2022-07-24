@@ -63,15 +63,17 @@ main(void)
 	}
 
 	lv_obj_t *rect = lv_obj_create(lv_scr_act());
-	lv_obj_set_pos(rect, 1, 1);
-	lv_obj_set_size(rect, 135 - 1 * 2, 240 - 1 * 2);
-	lv_obj_set_style_bg_color(rect, lv_color_make(0x00, 0x99, 0xff), LV_STATE_DEFAULT);
+	lv_obj_set_pos(rect, 0, 0);
+	lv_obj_set_size(rect, 135, 240);
+	lv_obj_set_style_bg_color(rect, lv_color_make(0x00, 0x00, 0x00), LV_STATE_DEFAULT);
 	lv_obj_set_style_border_width(rect, 0, LV_STATE_DEFAULT);
 	lv_obj_set_style_shadow_width(rect, 0, LV_STATE_DEFAULT);
 
 	lv_obj_t *count_label = lv_label_create(lv_scr_act());
 	lv_obj_align(count_label, LV_ALIGN_CENTER, 0, 0);
+	lv_obj_set_style_text_font(count_label, &lv_font_montserrat_48, LV_STATE_DEFAULT);
 	lv_obj_set_style_text_color(count_label, lv_color_make(0xff, 0xff, 0xff), LV_STATE_DEFAULT);
+	lv_label_set_text(count_label, "0");
 
 	lv_task_handler();
 	display_blanking_off(display_dev);
@@ -79,24 +81,18 @@ main(void)
 	gpio_port_set_masked_raw(gpio_ex_dev, 0x3f, 0x3f);
 
 	uint32_t now = 0;
-	uint32_t i = 0;
 	while (1) {
 		counter_get_value(rtc_dev, &now);
-		LOG_INF("[DS3231] time: %u", now);
-
-		led_strip_update_rgb(rgb_dev, &rgb[i % 3], RGB_NUM_PIXELS);
-
-		gpio_pin_set(gpio_ex_dev, i % 6, 0);
 
 		sprintf(count_str, "%u", now);
-		lv_obj_set_style_bg_color(
-			rect, lv_color_make(rgb[i % 5].r, rgb[i % 5].g, rgb[i % 5].b), LV_STATE_DEFAULT);
-		lv_label_set_text(count_label, count_str);
-		lv_task_handler();
-
-		gpio_pin_set(gpio_ex_dev, i % 6, 1);
-
-		k_sleep(K_MSEC(1000));
-		i++;
+		char *start = count_str + strlen(count_str) - 6;
+		for (int i = 5; i >= 0; i--) {
+			gpio_pin_set(gpio_ex_dev, i, 0);
+			start[i + 1] = '\0';
+			lv_label_set_text(count_label, start + i);
+			lv_task_handler();
+			gpio_pin_set(gpio_ex_dev, i, 1);
+			k_sleep(K_MSEC(20));
+		}
 	}
 }
