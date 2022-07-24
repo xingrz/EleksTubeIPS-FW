@@ -1,0 +1,3 @@
+compatible: "eleks,st7789v"
+
+include: ["sitronix,st7789v.yaml"]

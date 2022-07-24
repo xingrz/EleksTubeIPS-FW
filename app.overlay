@@ -54,7 +54,7 @@
 
 &spi3 {
 	st7789v: st7789v@0{
-		compatible = "sitronix,st7789v";
+		compatible = "eleks,st7789v";
 		label = "st7789v";
 
 		reg = <0>;
