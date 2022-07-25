@@ -16,6 +16,8 @@ static const struct device *rgb_dev = DEVICE_DT_GET(RGB_NODE);
 static const struct device *rtc_dev = DEVICE_DT_GET(RTC_NODE);
 static const struct device *display_dev = DEVICE_DT_GET(DISPLAY_NODE);
 
+static lv_obj_t *make_text(uint8_t screen_idx);
+
 void
 main(void)
 {
@@ -61,31 +63,48 @@ main(void)
 		return;
 	}
 
-	lv_obj_t *rect = lv_obj_create(lv_scr_act());
-	lv_obj_set_pos(rect, 0, 0);
-	lv_obj_set_size(rect, 810, 240);
-	lv_obj_set_style_bg_color(rect, lv_color_make(0x00, 0x00, 0x00), LV_STATE_DEFAULT);
-	lv_obj_set_style_border_width(rect, 0, LV_STATE_DEFAULT);
-	lv_obj_set_style_shadow_width(rect, 0, LV_STATE_DEFAULT);
-
-	lv_obj_t *count_label = lv_label_create(lv_scr_act());
-	lv_obj_align(count_label, LV_ALIGN_CENTER, 0, 0);
-	lv_obj_set_style_text_font(count_label, &lv_font_montserrat_48, LV_STATE_DEFAULT);
-	lv_obj_set_style_text_color(count_label, lv_color_make(0xff, 0xff, 0xff), LV_STATE_DEFAULT);
-	lv_label_set_text(count_label, "0");
+	lv_obj_t *nums[DISPLAY_NUM_SCREENS];
+	for (int i = 0; i < DISPLAY_NUM_SCREENS; i++) {
+		nums[i] = make_text(i);
+	}
 
 	lv_task_handler();
 	display_blanking_off(display_dev);
 
-	uint32_t i = 0;
 	uint32_t now = 0;
 	while (1) {
 		counter_get_value(rtc_dev, &now);
 
 		sprintf(count_str, "%u", now);
-		lv_obj_align(count_label, LV_ALIGN_CENTER, -100 + ++i % 200, 0);
-		lv_label_set_text(count_label, count_str);
+		char *start = count_str + strlen(count_str) - 6;
+		for (int i = DISPLAY_NUM_SCREENS - 1; i >= 0; i--) {
+			start[i + 1] = '\0';
+			lv_label_set_text(nums[i], start + i);
+		}
+
 		lv_task_handler();
-		k_sleep(K_MSEC(20));
+		k_sleep(K_MSEC(100));
 	}
+}
+
+extern const lv_font_t ubmn_200;
+
+static lv_obj_t *
+make_text(uint8_t screen_idx)
+{
+	lv_obj_t *rect = lv_obj_create(lv_scr_act());
+	lv_obj_set_pos(rect, DISPLAY_SCREEN_WIDTH * screen_idx, 0);
+	lv_obj_set_size(rect, DISPLAY_SCREEN_WIDTH, DISPLAY_HEIGHT);
+	lv_obj_set_style_bg_color(rect, lv_color_make(0x00, 0x00, 0x00), LV_STATE_DEFAULT);
+	lv_obj_set_style_border_width(rect, 0, LV_STATE_DEFAULT);
+	lv_obj_set_style_shadow_width(rect, 0, LV_STATE_DEFAULT);
+	lv_obj_set_style_radius(rect, 0, LV_STATE_DEFAULT);
+
+	lv_obj_t *label = lv_label_create(rect);
+	lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
+	lv_obj_set_style_text_font(label, &ubmn_200, LV_STATE_DEFAULT);
+	lv_obj_set_style_text_color(label, lv_color_make(0x96, 0xc3, 0xde), LV_STATE_DEFAULT);
+	lv_label_set_text(label, "0");
+
+	return label;
 }

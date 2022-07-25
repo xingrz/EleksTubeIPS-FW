@@ -204,10 +204,11 @@ st7789v_write_screens(const struct device *dev, const uint16_t x, const uint16_t
 	uint16_t disp_idx1 = draw_x1 / screen_width;
 	uint16_t disp_idx2 = (draw_x2 + screen_width - 1) / screen_width;
 
-	if (disp_idx1 + 1 == disp_idx2) {
-		st7789v_screen_select(dev, disp_idx1);
-		return -1;
-	}
+	// FIXME
+	// if (disp_idx1 + 1 == disp_idx2) {
+	// 	st7789v_screen_select(dev, disp_idx1);
+	// 	return -1;
+	// }
 
 	const uint8_t *disp_buf;
 	struct spi_buf tx_buf;
