@@ -10,6 +10,14 @@ EleksTubeIPS-FW
 - [x] NFP114H-03AF LCDs
 - [x] DS3231SN RTC
 
+## Feature TODOs
+
+- [ ] Wi-Fi setup
+- [ ] NTP
+- [ ] Nixie tube images
+- [ ] Menus
+- [ ] Shell / Host software
+
 ## License
 
 [WTFPL](LICENSE)
